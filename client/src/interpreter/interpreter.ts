@@ -667,7 +667,7 @@ export const buildMods = (
 };
 
 ///////////////// Context Manager
-// OptionInstance is meant to act like an instance of aparticular template Option.
+// OptionInstance is meant to act like an instance of a particular template Option.
 // Instance data baked into the same object in a format convenient for mapping
 // to different UI Shapes
 export interface OptionInstance {

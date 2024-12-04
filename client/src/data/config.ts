@@ -1,7 +1,7 @@
 import { v4 as uuid } from "uuid";
 import { makeAutoObservable, toJS } from "mobx";
 import { makePersistable } from "mobx-persist-store";
-import RootStore from "./index";
+import RootStore from ".";
 
 import { ConfigValues } from "../utils/modifier-helpers";
 

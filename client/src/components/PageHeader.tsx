@@ -2,7 +2,9 @@ import itl from "../translations";
 import { useState } from "react";
 import AboutModal from "./modal/AboutModal";
 import SupportModal from "./modal/SupportModal";
-import "../styles/components/page-header.scss"
+import "../styles/components/page-header.scss";
+import { useStores } from "../data";
+import { ConfigInterface } from "../data/config";
 
 export interface PageHeaderProps {
   headerText: string;
@@ -12,6 +14,7 @@ export interface PageHeaderProps {
 function PageHeader({ headerText, showLogo=false }: PageHeaderProps) {
   const [supportOpen, setSupportOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [isLoading, setLoading] = useState<boolean>(false);
 
   return (
     <header>
