@@ -172,6 +172,22 @@ describe("Modifiers", () => {
     const coiCooMod = mods[coiCooPath];
     expect(coiCooMod.final).toBeTruthy();
   });
+
+  it("Adds secOutRel.secOut.typDamOut to modifiers", () => {
+    const mzOption = allOptions[mzTemplatePath];
+    const selections = {
+      "Buildings.Templates.AirHandlersFans.Components.OutdoorReliefReturnSection.MixedAirWithDamper.secOut-secOutRel.secOut":
+      "Buildings.Templates.AirHandlersFans.Components.OutdoorSection.DedicatedDampersAirflow",
+    };
+    const mods = buildMods(mzOption, selections, allOptions);
+    console.log(Object.fromEntries(
+       Object.entries(mods).filter(
+          ([key, val]) => key.includes('secOutRel.secOut.typDamOut')
+       )));
+    const typDamOutPath = "secOutRel.secOut.typDamOut";
+    const typDamOutMod = mods[typDamOutPath];
+    expect(typDamOutMod?.final)?.toBeTruthy();
+  });
 });
 
 const buildExpression = (operator: OperatorType, operands: any[]) => {
