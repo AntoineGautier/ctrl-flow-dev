@@ -1,0 +1,15 @@
+services:
+  ctrl-flow:
+    image: lbl-api
+    container_name: ctrl-flow
+    ports:
+      - "3000:3000"
+    develop:
+      watch:
+        - action: sync
+          path: ./server
+          target: /server
+          ignore:
+            - node_modules
+            - package-lock.json
+            - scripts

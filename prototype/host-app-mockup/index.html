@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HPC Plant Design Guide — third-party host mockup</title>
+<style>
+  :root {
+    --brand: #1f4e79;
+    --brand-light: #2d6da8;
+    --bg: #f4f6f8;
+    --border: #d9dee3;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: var(--brand);
+    color: #fff;
+    padding: 0 1.25rem;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex: none;
+  }
+  header .logo { font-weight: 700; letter-spacing: .02em; }
+  header nav a {
+    color: #cfe0ef;
+    text-decoration: none;
+    font-size: .9rem;
+    margin-right: 1.25rem;
+  }
+  header nav a.active { color: #fff; border-bottom: 2px solid #fff; padding-bottom: 4px; }
+  .shell { display: flex; flex: 1; min-height: 0; }
+  aside {
+    width: 210px;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 1rem 0;
+    flex: none;
+  }
+  aside .item {
+    padding: .55rem 1.25rem;
+    font-size: .9rem;
+    color: #444;
+    cursor: pointer;
+  }
+  aside .item.active {
+    background: #e8f0f8;
+    color: var(--brand);
+    font-weight: 600;
+    border-right: 3px solid var(--brand);
+  }
+  main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .toolbar {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: .6rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex: none;
+  }
+  .toolbar h1 { font-size: 1rem; color: #333; font-weight: 600; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar button {
+    background: var(--brand-light);
+    color: #fff;
+    border: 0;
+    border-radius: 4px;
+    padding: .45rem .9rem;
+    font-size: .85rem;
+    cursor: pointer;
+  }
+  .toolbar button:hover:not(:disabled) { background: var(--brand); }
+  .toolbar button:disabled { opacity: .5; cursor: default; }
+  #status { font-size: .8rem; color: #666; }
+  #status.ok { color: #1a7f37; }
+  #status.err { color: #b42318; }
+  .embed-wrap { flex: 1; min-height: 0; padding: .75rem; display: flex; gap: .75rem; }
+  iframe {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+  }
+  .placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: .95rem;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+  }
+  #payload-panel {
+    width: 380px;
+    flex: none;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: none;
+    flex-direction: column;
+    min-height: 0;
+  }
+  #payload-panel.visible { display: flex; }
+  #payload-panel h2 {
+    font-size: .85rem;
+    color: #333;
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--border);
+  }
+  #payload-json {
+    flex: 1;
+    overflow: auto;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: .72rem;
+    padding: .75rem .9rem;
+    color: #24292f;
+    white-space: pre;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <span class="logo">⬡ HPC Plant Design Guide</span>
+  </header>
+
+  <div class="shell">
+    <aside>
+      <div class="item">Archetype Selector</div>
+      <div class="item">Plant Configuration & Sizing</div>
+      <div class="item active">Controls Configuration & Documentation</div>
+    </aside>
+
+    <main>
+      <div class="toolbar">
+        <h1>Embedded ctrl-flow: configs only, preloaded systems</h1>
+        <div class="spacer"></div>
+        <span id="status">client: loading…</span>
+        <button id="get-payload" disabled>Get payload</button>
+        <button id="generate-doc" disabled>Generate sequence doc (.docx)</button>
+      </div>
+      <div class="embed-wrap">
+        <!-- ctrl-flow embedded on the configs step only, preloaded with a
+             host-selected subset of systems (template modelica paths).
+             Override ports with query params: ?client=http://localhost:3001&api=http://localhost:3000 -->
+        <iframe id="ctrl-flow" title="ctrl-flow"></iframe>
+        <div id="payload-panel">
+          <h2>Payload from embedded client (body for POST /api/sequence)</h2>
+          <div id="payload-json"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const CLIENT_URL = (params.get("client") || "http://localhost:3001").replace(/\/$/, "");
+  const API_BASE = (params.get("api") || "http://localhost:3000").replace(/\/$/, "");
+
+  // The subset of systems this "third-party app" wants the user to configure.
+  const PRELOADED_SYSTEMS = [
+    "Buildings.Templates.AirHandlersFans.VAVMultiZone",
+    "Buildings.Templates.ZoneEquipment.VAVBoxReheat",
+  ];
+
+  const EMBED_URL =
+    `${CLIENT_URL}/#/configs?embedded=1&systems=` +
+    encodeURIComponent(PRELOADED_SYSTEMS.join(","));
+
+  const frame = document.getElementById("ctrl-flow");
+  const statusEl = document.getElementById("status");
+  const getPayloadBtn = document.getElementById("get-payload");
+  const generateBtn = document.getElementById("generate-doc");
+  const payloadPanel = document.getElementById("payload-panel");
+  const payloadJson = document.getElementById("payload-json");
+
+  let lastPayload = null;
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = cls || "";
+  }
+
+  frame.src = EMBED_URL;
+
+  // postMessage bridge: the embedded client announces itself with
+  // "ctrl-flow:ready", answers "ctrl-flow:get-payload" with "ctrl-flow:payload".
+  window.addEventListener("message", (event) => {
+    if (event.origin !== CLIENT_URL) return;
+
+    if (event.data?.type === "ctrl-flow:ready") {
+      setStatus("client: ready ✓", "ok");
+      getPayloadBtn.disabled = false;
+    }
+
+    if (event.data?.type === "ctrl-flow:payload") {
+      lastPayload = event.data.payload;
+      payloadJson.textContent = JSON.stringify(lastPayload, null, 2);
+      payloadPanel.classList.add("visible");
+      generateBtn.disabled = false;
+      setStatus("payload received ✓", "ok");
+    }
+  });
+
+  getPayloadBtn.addEventListener("click", () => {
+    frame.contentWindow.postMessage({ type: "ctrl-flow:get-payload" }, CLIENT_URL);
+  });
+
+  generateBtn.addEventListener("click", async () => {
+    generateBtn.disabled = true;
+    setStatus("generating sequence document… (can take a few minutes)");
+    try {
+      const res = await fetch(`${API_BASE}/api/sequence`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...lastPayload, DEL_INFO_BOX: [false] }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "Control Sequence.docx";
+      link.click();
+      setStatus("sequence document downloaded ✓", "ok");
+    } catch (e) {
+      setStatus(`API error: ${e.message}`, "err");
+    } finally {
+      generateBtn.disabled = false;
+    }
+  });
+
+  // Fallback message if the ctrl-flow client is not running.
+  fetch(CLIENT_URL, { mode: "no-cors" }).catch(() => {
+    setStatus("client: not running", "err");
+    const div = document.createElement("div");
+    div.className = "placeholder";
+    div.textContent = `ctrl-flow client is not running at ${CLIENT_URL} — start it with: cd client && PORT=3001 npm start`;
+    frame.replaceWith(div);
+  });
+</script>
+</body>
+</html>

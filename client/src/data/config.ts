@@ -41,6 +41,13 @@ export default class Config {
     }
   }
 
+  // Replaces all configs with the given system/template pairs.
+  // Used in embedded mode to preload a host-selected subset of systems.
+  seedConfigs(pairs: { systemPath: string; templatePath: string }[]) {
+    this.configs = [];
+    pairs.forEach((pair) => this.add(pair));
+  }
+
   add(config: ConfigProps) {
     const merged = {
       id: uuid(),
